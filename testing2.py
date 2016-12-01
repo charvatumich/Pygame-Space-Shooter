@@ -11,6 +11,12 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 BLACK = (0, 0, 0)
+YELLOW = (255, 255, 0)
+
+VEL_MUL = 5
+
+clock = pygame.time.Clock()
+
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -62,22 +68,30 @@ def main():
                 x, y = j.get_axis(0), j.get_axis(1)
                 print(x, y)
                 if x > .2:  # move right
-                    p.dx = x
-                if x < -.2:  # move left
-                    p.dx = x
+                    p.dx = x * VEL_MUL #scale the speed
+                elif x < -.2:  # move left,
+                    p.dx = x * VEL_MUL
+                else: #don't move on the x
+                    p.dx = 0
                 if y > .2:  # move down
-                    p.dy = y
-                if y < -.2:  # move up
-                    p.dy = y
-                p.move()
-            elif j.get_axis(4) > .2:
-                p.dx = j.get_axis(0)
-            elif j.get_axis(4) < -.2:
-                p.dx = j.get_axis(0)
-            elif j.get_axis(3) > .2:
-                p.dx = j.get_axis(0)
-            elif j.get_axis(3) > .2:
-                p.dx = j.get_axis(0)
+                    p.dy = y * VEL_MUL
+                elif y < -.2:  # move up
+                    p.dy = y * VEL_MUL
+                else: #Don't move on the y
+                    p.dy = 0
+
+            # if j.get_axis(4) > .2:
+            #     p.dx = j.get_axis(0)
+            # elif j.get_axis(4) < -.2:
+            #     p.dx = j.get_axis(0)
+            # else:
+            #     p.dx = 0
+            # if j.get_axis(3) > .2:
+            #     p.dx = j.get_axis(0)
+            # elif j.get_axis(3) > .2:
+            #     p.dx = j.get_axis(0)
+            # else:
+            #     p.dx
 
             elif e.type == pygame.locals.JOYHATMOTION:
                 print('hat motion')
@@ -86,11 +100,14 @@ def main():
             elif e.type == pygame.locals.JOYBUTTONUP:
                 print('button up')
 
+        p.move()
         screen.fill(BLACK)
         #pygame.draw.rect(screen, WHITE, [400, 300, 10, 10])
         sprites.update()
         sprites.draw(screen)
         pygame.display.update()
+
+        clock.tick(60)
 
     pygame.quit()
     quit()
