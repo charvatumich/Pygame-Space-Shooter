@@ -18,6 +18,9 @@ YELLOW = (255, 255, 0)
 
 VEL_MUL = 5
 
+FIREEVENT = pygame.USEREVENT+1
+pygame.time.set_timer(FIREEVENT, 125)
+
 GO_TXT = "You ran out of lives. Press A to play again, B to quit."
 GE_TXT = "Thanks for playing!"
 
@@ -28,7 +31,9 @@ clock = pygame.time.Clock()
 pygame.font.init()
 font = pygame.font.SysFont(None, 32)
 
-E_LIST = []
+E_LIST = [] #hold enemies
+FB_LIST = [] #hold friendly bullets
+
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -55,14 +60,23 @@ class Player(pygame.sprite.Sprite):
 
 class FriendBullets(pygame.sprite.Sprite):
     def __init__(self, p, dx, dy):
-        pygame.sprite.Sprite.__init__()
-        self.image = pygame.Surface((3, 3))
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((10, 10))
         self.image.fill(YELLOW)
         self.rect = self.image.get_rect()
         self.x = p.x
         self.y = p.y
-        self.dx = self.dy = 0
+        self.dx = dx
+        self.dy = dy
         self.type = 'F'
+        print('bullet made')
+
+    def move(self):
+        self.x += self.dx * 10
+        self.y += self.dy * 10
+        self.rect.center = (self.x, self.y)
+        if self.y >= Y_MAX:
+            self.kill()
 
 class Spiral(pygame.sprite.Sprite):
     def __init__(self):
@@ -74,12 +88,15 @@ class Spiral(pygame.sprite.Sprite):
         self.y = 0
         self.rect.center = (self.x, self.y)
         self.vel = 0
+        self.hp = 2
 
     def move(self):
         if self.vel == 0:
             self.vel = random.randint(1, 3)
         self.y += self.vel
         self.rect.center = (self.x, self.y)
+        if self.y >= Y_MAX:
+            self.kill()
 
 
 def message(txt, color):
@@ -102,7 +119,8 @@ def gameLoop(game_over, game_exit):
 
     p = Player()
     sprites = pygame.sprite.Group(p)
-
+    bx = 0
+    by = -1
 
 
     if p.lives <= 0:
@@ -137,7 +155,6 @@ def gameLoop(game_over, game_exit):
                 pygame.quit()
             elif e.type == pygame.locals.JOYAXISMOTION:
                 x, y = j.get_axis(0), j.get_axis(1)
-                print(x, y)
                 if x > .2:  # move right
                     p.dx = x * VEL_MUL #scale the speed
                 elif x < -.2:  # move left,
@@ -151,30 +168,36 @@ def gameLoop(game_over, game_exit):
                 else: #Don't move on the y
                     p.dy = 0
 
-            # if j.get_axis(4) > .2:
-            #     p.dx = j.get_axis(0)
-            # elif j.get_axis(4) < -.2:
-            #     p.dx = j.get_axis(0)
-            # else:
-            #     p.dx = 0
-            # if j.get_axis(3) > .2:
-            #     p.dx = j.get_axis(0)
-            # elif j.get_axis(3) > .2:
-            #     p.dx = j.get_axis(0)
-            # else:
-            #     p.dx
+                if j.get_axis(4) > .1: #shoot right
+                    bx = j.get_axis(4)
+                elif j.get_axis(4) < -.1: #shoot left
+                    bx = j.get_axis(4)
+                if j.get_axis(3) > .025: #shoot down
+                    by = j.get_axis(3)
+                elif j.get_axis(3) < -.025: #shoot up
+                    by = j.get_axis(3)
+                if j.get_axis(3) < .1 and j.get_axis(3) > -.1 and j.get_axis(4) < .1 and j.get_axis(4) > -.1:
+                    by = -1
+                    bx = 0
 
-            elif e.type == pygame.locals.JOYHATMOTION:
-                print('hat motion')
-            elif e.type == pygame.locals.JOYBUTTONDOWN:
-                print('button down')
-            elif e.type == pygame.locals.JOYBUTTONUP:
-                print('button up')
+
+            if e.type == FIREEVENT:
+                FB_LIST.append(FriendBullets(p, bx, by))
+            # elif e.type == pygame.locals.JOYHATMOTION:
+            #     print('hat motion')
+            # elif e.type == pygame.locals.JOYBUTTONDOWN:
+            #     print('button down')
+            # elif e.type == pygame.locals.JOYBUTTONUP:
+            #     print('button up')
 
         p.move()
         for en in E_LIST:
             sprites.add(en)
             en.move()
+        for fbul in FB_LIST:
+            sprites.add(fbul)
+            fbul.move()
+
         screen.fill(BLACK)
         #pygame.draw.rect(screen, WHITE, [400, 300, 10, 10])
         sprites.update()
