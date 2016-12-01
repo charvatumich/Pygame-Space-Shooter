@@ -1,3 +1,31 @@
+# "pyGame Bullet Hell" - by Hunter Charvat
+# Created for SI 206 Fall 2016, project 4, taught by Colleen van Lent
+#
+# ***************************************************
+#*** You need to have a gampad connected to play ***
+# ***************************************************
+# Sources:
+#     The pyGame Documentation:
+#         http://www.pygame.org/docs/index.html
+#         Everything in this program canbe found here, very helpful.
+#
+#     The Official Python Documentation:
+#         https://docs.python.org/3/library/random.html
+#         Was especially useful for the random module in this game.async
+#
+#     thenewboston Pygame Tutorial Video Series by Bucky Roberts
+#         https://www.youtube.com/watch?v=K5F-aGDIYaM&list=PL6gx4Cwl9DGAjkwJocj7vlc_mFU-4wXJq&index=1
+#         I used this to learn some best pracices of pygame, and build the basic frameworks such as display.set, update, etc.
+
+#     Gamepad monitor program by Paul Vincent Craven
+#         http://programarcadegames.com/python_examples/show_file.php?file=joystick_calls.py
+#         Used this to learn how python interprets input from the gamepad
+
+#     'game.py' by TheLycaeum of Github.
+#         https://github.com/TheLycaeum/pygame
+#         Took some inspiration regarding group functionality and projectile creation.
+
+
 import pygame
 import pygame.sprite
 from pygame import locals
@@ -30,7 +58,7 @@ GO_TXT = "You ran out of lives. Press A to play again, B to quit."
 GE_TXT = "Thanks for playing!"
 
 screen = pygame.display.set_mode((X_MAX, Y_MAX))
-pygame.display.set_caption('2016: I Underestimated Everything')
+pygame.display.set_caption('pygame Bullet Hell')
 
 clock = pygame.time.Clock()
 pygame.font.init()
