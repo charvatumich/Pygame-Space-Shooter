@@ -21,6 +21,9 @@ VEL_MUL = 5
 FIREEVENT = pygame.USEREVENT+1
 pygame.time.set_timer(FIREEVENT, 125)
 
+EN_FIRE = pygame.USEREVENT+2
+pygame.time.set_timer(EN_FIRE, 500)
+
 GO_TXT = "You ran out of lives. Press A to play again, B to quit."
 GE_TXT = "Thanks for playing!"
 
@@ -33,7 +36,7 @@ font = pygame.font.SysFont(None, 32)
 
 E_LIST = [] #hold enemies
 FB_LIST = [] #hold friendly bullets
-
+EB_LIST = [] #hold enemy bullets
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -69,13 +72,13 @@ class FriendBullets(pygame.sprite.Sprite):
         self.dx = dx
         self.dy = dy
         self.type = 'F'
-        print('bullet made')
+        self.hp = 10
 
     def move(self):
         self.x += self.dx * 10
         self.y += self.dy * 10
         self.rect.center = (self.x, self.y)
-        if self.y >= Y_MAX:
+        if self.y <= 0 or self.y >= Y_MAX or self.x <= 0 or self.x >= X_MAX:
             self.kill()
 
 class Spiral(pygame.sprite.Sprite):
@@ -89,6 +92,7 @@ class Spiral(pygame.sprite.Sprite):
         self.rect.center = (self.x, self.y)
         self.vel = 0
         self.hp = 2
+        self.type = 'E'
 
     def move(self):
         if self.vel == 0:
@@ -99,9 +103,38 @@ class Spiral(pygame.sprite.Sprite):
             self.kill()
 
 
+class SpiralBullets(pygame.sprite.Sprite):
+    def __init__(self, en):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((5, 5))
+        self.image.fill(BLUE)
+        self.rect = self.image.get_rect()
+        self.x = en.x
+        self.y = en.y
+        self.dx = random.uniform(-1.0, 1.0)
+        self.dy = random.uniform(-1.0, 1.0)
+        self.type = 'E'
+        self.hp = 1
+
+    def move(self):
+        self.x += self.dx * 2
+        self.y += self.dy * 2
+        self.rect.center = (self.x, self.y)
+        if self.y <= 0 or self.y >= Y_MAX or self.x <= 0 or self.x >= X_MAX:
+            self.kill()
+
 def message(txt, color):
     screen_text = font.render(txt, True, color)
     screen.blit(screen_text, [X_MAX/8, Y_MAX/2])
+
+def displayHP(p):
+    screen_text = font.render(str(p.hp), True, (0, 255, 255))
+    screen.blit(screen_text, [X_MAX - 20, Y_MAX - 25])
+
+
+def displayLives(p):
+    screen_text = font.render(str(p.lives), True, (0, 255, 255))
+    screen.blit(screen_text, [5, Y_MAX-25])
 
 
 def gameLoop(game_over, game_exit):
@@ -183,6 +216,9 @@ def gameLoop(game_over, game_exit):
 
             if e.type == FIREEVENT:
                 FB_LIST.append(FriendBullets(p, bx, by))
+            if e.type == EN_FIRE:
+                for en in E_LIST:
+                    EB_LIST.append(SpiralBullets(en))
             # elif e.type == pygame.locals.JOYHATMOTION:
             #     print('hat motion')
             # elif e.type == pygame.locals.JOYBUTTONDOWN:
@@ -197,9 +233,14 @@ def gameLoop(game_over, game_exit):
         for fbul in FB_LIST:
             sprites.add(fbul)
             fbul.move()
+        for ebul in EB_LIST:
+            sprites.add(ebul)
+            ebul.move()
+
 
         screen.fill(BLACK)
-        #pygame.draw.rect(screen, WHITE, [400, 300, 10, 10])
+        displayHP(p)
+        displayLives(p)
         sprites.update()
         sprites.draw(screen)
         pygame.display.update()
