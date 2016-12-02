@@ -18,4 +18,9 @@ Some notes:
         seems to be much more efficient.
         
 Rights Statement:
-  - All are free to use this game, the code within, and the assests within at their own risk, so long as I am referenced.
+  - All are free to use this game, the code within, and the assests (less the music) within at their own risk, so long as I am 
+    referenced.
+
+  - The music is a song called Retribution by Battalium. It was distributed on sovndwave.com royalty free, huge thank you to the
+    producer for letting anyone use their music! Here is the link:
+      https://soundcloud.com/battalium/retribution
