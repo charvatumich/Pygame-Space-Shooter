@@ -34,7 +34,7 @@ import random
 X_MAX = 800
 Y_MAX = 600
 
-MILLI_DIFFICULTY_UP = 30000
+MILLI_DIFFICULTY_UP = 15000
 
 GAME_EXIT = True
 
@@ -43,10 +43,13 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 BLACK = (0, 0, 0)
 YELLOW = (255, 255, 0)
+CYAN = (0, 255, 255)
+ORANGE = (255,165,0)
 
 VEL_MUL = 3
 
 LIFE_COUNT = 2
+SCORE = 0
 
 FIREEVENT = pygame.USEREVENT+1
 pygame.time.set_timer(FIREEVENT, 125)
@@ -64,8 +67,14 @@ clock = pygame.time.Clock()
 pygame.font.init()
 font = pygame.font.SysFont(None, 32)
 
+song = 'Battalium_Retribution.wav'
+pygame.mixer.init()
+pygame.mixer.music.load(song)
+pygame.mixer.music.play()
+
 ENEMIES = pygame.sprite.Group()
 EN_SHIPS = pygame.sprite.Group()
+EN_BUL = pygame.sprite.Group()
 FRIENDS = pygame.sprite.Group()
 NEUTRAL = pygame.sprite.Group()
 SPRITES = pygame.sprite.Group()
@@ -134,7 +143,7 @@ class Spiral(pygame.sprite.Sprite):
         self.rect.center = (self.x, self.y)
         self.vel = 0
         self.hp = 2
-        self.type = 'E'
+        self.type = 'spi'
 
     def move(self):
         if self.vel == 0:
@@ -152,26 +161,34 @@ class Spiral(pygame.sprite.Sprite):
         if self.hp == 0:
             self.kill()
 
+
 class SpiralBullets(pygame.sprite.Sprite):
     def __init__(self, en):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface((5, 5))
-        self.image.fill(BLUE)
+        self.image.fill(CYAN)
         self.rect = self.image.get_rect()
         self.x = en.x
         self.y = en.y
         self.dx = random.uniform(-1.0, 1.0)
         self.dy = random.uniform(-1.0, 1.0)
-        self.type = 'E'
         self.hp = 1
+        self.type = en.type
 
     def move(self):
-        self.x += self.dx * 2
-        self.y += self.dy * 2
-        self.rect.center = (self.x, self.y)
-        if self.y <= 0 or self.y >= Y_MAX or self.x <= 0 or self.x >= X_MAX:
-            self.kill()
-            del self
+        if self.type == 'spi':
+            self.x += self.dx * 2
+            self.y += self.dy * 2
+            self.rect.center = (self.x, self.y)
+            if self.y <= 0 or self.y >= Y_MAX or self.x <= 0 or self.x >= X_MAX:
+                self.kill()
+                del self
+        elif self.type == 'zag':
+            self.y += 3
+            self.rect.center = (self.x, self.y)
+            if self.y <= 0 or self.y >= Y_MAX or self.x <= 0 or self.x >= X_MAX:
+                self.kill()
+                del self
     def hit(self, target):
         return self.rect.colliderect(target)
 
@@ -179,23 +196,63 @@ class SpiralBullets(pygame.sprite.Sprite):
         self.hp -= 1
         if self.hp == 0:
             self.kill()
-            #self.image =
+
+class Zag(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((30,30))
+        self.image.fill(ORANGE)
+        self.rect = self.image.get_rect()
+        self.x = random.randint(0, X_MAX)
+        self.y = 0
+        self.rect.center = (self.x, self.y)
+        self.vel = random.randint(1, 2)
+        self.hp = 2
+        self.dx = random.randint(-3, 3)
+        self.type = 'zag'
+
+    def move(self):
+        self.y += self.vel
+        self.x += self.dx
+        if self.x >= X_MAX or self.x <= 0:
+            self.dx = -self.dx
+        self.rect.center = (self.x, self.y)
+        if self.y >= Y_MAX:
+            self.kill()
+
+    def hit(self, target):
+        return self.rect.colliderect(target)
+
+    def damage(self):
+        self.hp -= 1
+        if self.hp == 0:
+            self.kill()
+
 
 def message(txt, color):
     screen_text = font.render(txt, True, color)
     screen.blit(screen_text, [X_MAX/8, Y_MAX/2])
 
 def displayHP(p):
-    screen_text = font.render(str(p.hp), True, (0, 255, 255))
-    screen.blit(screen_text, [X_MAX - 20, Y_MAX - 25])
+    screen_text = font.render("HP:" + str(p.hp), True, (0, 255, 255))
+    screen.blit(screen_text, [X_MAX - 55, Y_MAX - 25])
 
 
 def displayLives(p):
-    screen_text = font.render(str(p.lives), True, (0, 255, 255))
+    screen_text = font.render("Lives:" + str(p.lives), True, (0, 255, 255))
     screen.blit(screen_text, [5, Y_MAX-25])
 
+def displayScore():
+    global SCORE
+    screen_text = font.render("Score:" + str(SCORE), True, (0, 255, 255))
+    screen.blit(screen_text, [X_MAX -500, Y_MAX-25])
+
+def displayTime(time):
+    screen_text = font.render(str(time), True, (0, 255, 255))
+    screen.blit(screen_text, [X_MAX - 300, Y_MAX - 25])
 
 def gameLoop(game_over, game_exit, p):
+    global SCORE
     pygame.init()
 
     pygame.joystick.init()  #intiate gamepad functionality
@@ -235,6 +292,7 @@ def gameLoop(game_over, game_exit, p):
                         SPRITES.empty()
                         NEUTRAL.empty()
                         EN_SHIPS.empty()
+                        pygame.mixer.music.rewind()
                         gameLoop(False, True, z)
                     elif e.button == 1:
                         screen.fill(BLACK)
@@ -245,9 +303,13 @@ def gameLoop(game_over, game_exit, p):
 
         passed_time = pygame.time.get_ticks()
         diff_modifier = passed_time / MILLI_DIFFICULTY_UP
-        spiral_p = 100 - diff_modifier
-        spiral_v = random.randint(0, 100)
-        if spiral_v > spiral_p:
+        en_p = 100 - diff_modifier
+        en_v = random.randint(0, 100)
+        if en_v > en_p and en_v % 2 == 0:
+            temp = Zag()
+            ENEMIES.add(temp)
+            EN_SHIPS.add(temp)
+        elif en_v > en_p:
             temp = Spiral()
             ENEMIES.add(temp)
             EN_SHIPS.add(temp)
@@ -287,6 +349,7 @@ def gameLoop(game_over, game_exit, p):
             if e.type == EN_FIRE:
                 for en in EN_SHIPS.sprites():
                     ENEMIES.add(SpiralBullets(en))
+                    EN_BUL.add(SpiralBullets(en))
 
 
         for en in ENEMIES.sprites():
@@ -301,6 +364,8 @@ def gameLoop(game_over, game_exit, p):
 
         hit_en_lis = pygame.sprite.groupcollide(FRIENDS, ENEMIES, False, True)
         hit_p_lis = pygame.sprite.groupcollide(NEUTRAL, ENEMIES, False, True)
+        for point in hit_en_lis.values():
+            SCORE += 1
         for hit in hit_p_lis.values():
             for ship in hit:
                 p.damage()
@@ -310,8 +375,13 @@ def gameLoop(game_over, game_exit, p):
             p.hp = 5
             p.x = X_MAX / 2
             p.y = Y_MAX / 2
+
+        #Display HUD
         displayHP(p)
         displayLives(p)
+        displayScore()
+        displayTime(passed_time / 1000)
+
         SPRITES.update()
         SPRITES.draw(screen)
         pygame.display.update()
