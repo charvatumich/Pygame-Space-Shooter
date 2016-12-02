@@ -1,5 +1,6 @@
 # "pyGame Bullet Hell" - by Hunter Charvat
 # Created for SI 206 Fall 2016, project 4, taught by Colleen van Lent
+# Version 1 - 12/2/2016
 #
 # ***************************************************
 #*** You need to have a gampad connected to play ***
@@ -34,7 +35,7 @@ import random
 X_MAX = 800
 Y_MAX = 600
 
-MILLI_DIFFICULTY_UP = 15000
+MILLI_DIFFICULTY_UP = 15000 #the time between difficulty increases
 
 GAME_EXIT = True
 
@@ -46,19 +47,19 @@ YELLOW = (255, 255, 0)
 CYAN = (0, 255, 255)
 ORANGE = (255,165,0)
 
-VEL_MUL = 3
+VEL_MUL = 3 #player speed
 
 LIFE_COUNT = 2
 SCORE = 0
 
-FIREEVENT = pygame.USEREVENT+1
+FIREEVENT = pygame.USEREVENT+1 #event that checks if the player should shoot
 pygame.time.set_timer(FIREEVENT, 125)
 
-EN_FIRE = pygame.USEREVENT+2
+EN_FIRE = pygame.USEREVENT+2 #event that checks if the enemies should shoot
 pygame.time.set_timer(EN_FIRE, 250)
 
-GO_TXT = "You ran out of lives. Press A to play again, B to quit."
-GE_TXT = "Thanks for playing!"
+GO_TXT = "You ran out of lives. Press A to play again, B to quit." #game over text
+GE_TXT = "Thanks for playing!" #game exit text
 
 screen = pygame.display.set_mode((X_MAX, Y_MAX))
 pygame.display.set_caption('pygame Bullet Hell')
@@ -72,6 +73,7 @@ pygame.mixer.init()
 pygame.mixer.music.load(song)
 pygame.mixer.music.play()
 
+#groups used to handle various collision and other functionality
 ENEMIES = pygame.sprite.Group()
 EN_SHIPS = pygame.sprite.Group()
 EN_BUL = pygame.sprite.Group()
@@ -79,6 +81,7 @@ FRIENDS = pygame.sprite.Group()
 NEUTRAL = pygame.sprite.Group()
 SPRITES = pygame.sprite.Group()
 
+#the player controller class
 class Player(pygame.sprite.Sprite):
     def __init__(self, lives):
         pygame.sprite.Sprite.__init__(self)
@@ -90,13 +93,13 @@ class Player(pygame.sprite.Sprite):
         self.dx = self.dy = 0
         self.hp = 5
         self.lives = lives
-        self.type = 'F'
+        self.type = 'F' #type is occasionally used in projectile creation
 
     def move(self):
-        if (float(self.x) + self.dx) >= float(0) and (float(self.x) + self.dx) <= float(X_MAX):
+        if (float(self.x) + self.dx) >= float(0) and (float(self.x) + self.dx) <= float(X_MAX): #check that player is staying on screen
             self.x += self.dx
 
-        if (self.y + self.dy) >= float(0) and (self.y + self.dy) <= float(Y_MAX):
+        if (self.y + self.dy) >= float(0) and (self.y + self.dy) <= float(Y_MAX): #check that player is staying on screen
             self.y += self.dy
 
         self.rect.center = (self.x, self.y)
@@ -124,7 +127,7 @@ class FriendBullets(pygame.sprite.Sprite):
         if self.y <= 0 or self.y >= Y_MAX or self.x <= 0 or self.x >= X_MAX:
             self.kill()
 
-    def hit(self, target):
+    def hit(self, target): #currently unused
         return self.rect.colliderect(target)
 
     def damage(self):
@@ -151,7 +154,7 @@ class Spiral(pygame.sprite.Sprite):
         self.y += self.vel
         self.rect.center = (self.x, self.y)
         if self.y >= Y_MAX:
-            self.kill()
+            self.kill() #get rid of the sprite if it goes off screen
 
     def hit(self, target):
         return self.rect.colliderect(target)
@@ -176,7 +179,7 @@ class SpiralBullets(pygame.sprite.Sprite):
         self.type = en.type
 
     def move(self):
-        if self.type == 'spi':
+        if self.type == 'spi': #check if the enemy shooting is a spiral or zag
             self.x += self.dx * 2
             self.y += self.dy * 2
             self.rect.center = (self.x, self.y)
@@ -281,11 +284,13 @@ def gameLoop(game_over, game_exit, p):
             screen.fill(BLACK)
             message(GO_TXT, RED)
             pygame.display.update()
+
             for e in pygame.event.get():
                 if e.type == pygame.locals.QUIT:
                     pygame.quit()
+
                 elif e.type == pygame.locals.JOYBUTTONDOWN:
-                    if e.button == 0:
+                    if e.button == 0: #if button A pressed
                         z = Player(2)
                         FRIENDS.empty()
                         ENEMIES.empty()
@@ -294,28 +299,33 @@ def gameLoop(game_over, game_exit, p):
                         EN_SHIPS.empty()
                         pygame.mixer.music.rewind()
                         gameLoop(False, True, z)
-                    elif e.button == 1:
+
+                    elif e.button == 1: #if button B pressed
                         screen.fill(BLACK)
                         message(GE_TXT, RED)
                         pygame.display.update()
                         pygame.quit()
 
-
+        #logic for randomly generating enemies
         passed_time = pygame.time.get_ticks()
         diff_modifier = passed_time / MILLI_DIFFICULTY_UP
         en_p = 100 - diff_modifier
         en_v = random.randint(0, 100)
+
         if en_v > en_p and en_v % 2 == 0:
             temp = Zag()
             ENEMIES.add(temp)
             EN_SHIPS.add(temp)
+
         elif en_v > en_p:
             temp = Spiral()
             ENEMIES.add(temp)
             EN_SHIPS.add(temp)
-        for e in pygame.event.get():
+
+        for e in pygame.event.get(): #handle inputs
             if e.type == pygame.locals.QUIT:
                 pygame.quit()
+
             elif e.type == pygame.locals.JOYAXISMOTION:
                 x, y = j.get_axis(0), j.get_axis(1)
                 if x > .2:  # move right
@@ -364,12 +374,16 @@ def gameLoop(game_over, game_exit, p):
 
         hit_en_lis = pygame.sprite.groupcollide(FRIENDS, ENEMIES, False, True)
         hit_p_lis = pygame.sprite.groupcollide(NEUTRAL, ENEMIES, False, True)
+
         for point in hit_en_lis.values():
-            SCORE += 1
+            SCORE += 1 #for every enemy sprite killed, score increase
+
         for hit in hit_p_lis.values():
             for ship in hit:
-                p.damage()
+                p.damage() #for every enemy that hits player, take damage
+
         screen.fill(BLACK)
+
         if p.hp <= 0:
             p.lives -=1
             p.hp = 5
@@ -381,7 +395,7 @@ def gameLoop(game_over, game_exit, p):
         displayLives(p)
         displayScore()
         displayTime(passed_time / 1000)
-
+        #update the screen
         SPRITES.update()
         SPRITES.draw(screen)
         pygame.display.update()
